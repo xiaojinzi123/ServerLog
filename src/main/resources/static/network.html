@@ -1,0 +1,869 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Android NetWotk Log</title>
+
+    <link href="./jsonThemes/jsoneditor.css" rel="stylesheet" type="text/css">
+    <script src="./jsonThemes/jsoneditor.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="./themes/default/easyui.css">
+    <link rel="stylesheet" type="text/css" href="./themes/icon.css">
+    <script type="text/javascript" src="./jquery.min.js"></script>
+    <script type="text/javascript" src="./jquery.easyui.min.js"></script>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style type="text/css">
+        * {
+            padding: 0;
+            margin: 0;
+            word-wrap: break-word;
+        }
+
+        #req_jsoneditor {
+            width: 100%;
+            height: 100%;
+        }
+
+        #res_jsoneditor {
+            width: 100%;
+            height: 100%;
+        }
+
+        .demo_text {
+            font-size: 18px;
+        }
+
+        .res_protocol_span {
+            font-size: 18px;
+            color: blue;
+        }
+
+        .res_message_span {
+            margin-left: 20px;
+            font-size: 18px;
+            color: blue;
+        }
+
+        .res_code_span {
+            margin-left: 20px;
+            font-size: 18px;
+            color: blue;
+        }
+
+        .res_header_span {
+            font-size: 18px;
+        }
+
+        .res_body_span {
+            font-size: 18px;
+        }
+
+        .req_method_span {
+            font-size: 18px;
+            color: blue;
+        }
+
+        .req_url_span {
+            margin-left: 20px;
+            font-size: 18px;;
+            color: blue;
+        }
+
+        .req_protocol_span {
+            margin-left: 20px;;
+            font-size: 18px;;
+            color: blue;
+        }
+
+        .req_header_span {
+            font-size: 18px;
+        }
+
+        .req_body_span {
+            font-size: 18px;
+        }
+
+        .li_req_url {
+            margin-bottom: 10px;
+        }
+
+        .li_req_url_category {
+            margin-bottom: 10px;
+        }
+
+        .a_req_url {
+            font-size: 16px;
+        }
+
+
+    </style>
+</head>
+<a href="www.baidu.com" name="www.baidu.com"></a>
+<body style="width: 100%">
+
+<div class="easyui-layout" style="width:100%;height:920px;">
+
+    <!--上面的-->
+    <div data-options="region:'north'" style="height:90px">
+
+        <span style="margin-left: 20px;line-height: 50px;font-size: 18px">state:</span>
+        <span style="margin-left: 4px;line-height: 50px;font-size: 18px" id="socketState">unKnow</span>
+
+        <select id="type_tag" style="margin-left: 10px;width: 120px;" onchange="onTypeTagChange(this)">
+            <option value='networkFirst'>networkFirst</option>
+        </select>
+        <select id="device_tag" style="margin-left: 10px;width: 240px;" onchange="onDeviceTagChange(this)">
+        </select>
+
+        <span style="margin-left: 10px;font-size: 16px">过滤：</span><input id="filter_info" style="width: 300px;"
+                                                                         class="easyui-textbox"
+                                                                         data-options="prompt:'Enter a key for filter url...'"
+                                                                         type="text" value=""/>
+        <a style="margin-left: 10px;font-size: 16px" onclick="clearMessage()" class="easyui-linkbutton"
+           data-options="iconCls:'icon-clear'">清除</a>
+
+        <div>
+            <span style="margin-left: 20px;font-size: 16px">类型：</span>
+            <span id="type_tag_value" style="font-size: 16px">networkFirst</span>
+
+            <span style="margin-left: 10px;font-size: 16px">设备：</span>
+            <span id="device_tag_value" style="font-size: 16px"></span>
+        </div>
+
+    </div>
+
+    <!--左边的-->
+    <div data-options="region:'west',split:true" title="请求地址" style="width:400px;padding: 10px">
+
+        <!--显示所有的请求地址-->
+        <ul id="urls_ul">
+        </ul>
+
+    </div>
+
+    <!--中间的-->
+    <div id="tabs" data-options="region:'center',iconCls:'icon-ok'" class="easyui-tabs"
+         style="width:700px;height:270px">
+
+        <div title="raw" id="network_detail_div" style="padding:10px">
+            <span class="demo_text">这里会显示整个完成的信息</span>
+        </div>
+        <div title="请求详情" id="req_detail_div" style="padding:10px">
+            <span class="demo_text">这里会显示请求的详情</span>
+        </div>
+        <div title="响应详情" id="res_detail_div" style="padding:10px">
+            <span class="demo_text">这里会显示响应的详情</span>
+        </div>
+        <div title="Json请求body" style="padding:10px">
+            <div id="req_jsoneditor"></div>
+        </div>
+        <div title="Json响应body" style="padding:10px">
+            <div id="res_jsoneditor"></div>
+        </div>
+
+    </div>
+
+
+</div>
+
+</div>
+
+</body>
+
+<script type="text/javascript">
+
+    // 初始化json解析器的
+
+    // create the editor
+    var container_req = document.getElementById('req_jsoneditor');
+    var container_res = document.getElementById('res_jsoneditor');
+
+    var options = {
+        mode: 'view',
+        modes: ['text', 'code', 'view'],
+        onEditable: function (node) {
+            return false;
+        }
+    };
+
+    var options1 = {
+        mode: 'tree',
+        modes: ['tree'],
+    };
+
+    var editor_req = new JSONEditor(container_req, options);
+    var editor_res = new JSONEditor(container_res, options);
+
+    setUp();
+
+    function setUp() {
+    }
+
+    // ==========================================================common function start=========================================================
+
+    /**
+     * 获取当前的设备的tag
+     */
+    function getCurrentDeviceTag() {
+        var device_tag_value = document.getElementById("device_tag_value");
+        return device_tag_value.innerHTML;
+    }
+
+    function setCurrentDeviceTag(deviceTag) {
+        var device_tag_value = document.getElementById("device_tag_value");
+        device_tag_value.innerHTML = deviceTag;
+    }
+
+    // ==========================================================common function end=========================================================
+
+    // 显示请求的信息
+    function showJson(json) {
+
+        var network_detail_div = document.getElementById("network_detail_div");
+        network_detail_div.innerHTML = "";
+
+        // 1.显示请求详情
+        var req_detail_div = document.getElementById("req_detail_div");
+        req_detail_div.innerHTML = "";
+        var req_wrap_div = document.createElement("div");
+
+        var req_method_span = document.createElement("span");
+        req_method_span.setAttribute("class", "req_method_span");
+        req_method_span.innerText = json.req_method;
+
+        var req_url_span = document.createElement("span");
+        req_url_span.setAttribute("class", "req_url_span");
+        req_url_span.innerText = decodeURIComponent(json.req_url);
+
+        var req_protocol_span = document.createElement("span");
+        req_protocol_span.setAttribute("class", "req_protocol_span");
+        req_protocol_span.innerText = "HTTP/1.1";
+
+        req_wrap_div.appendChild(req_method_span);
+        req_wrap_div.appendChild(req_url_span);
+        req_wrap_div.appendChild(req_protocol_span);
+
+        // 显示请求header和请求Body
+        req_wrap_div.appendChild(document.createElement("br"));
+
+        var req_headers = json.req_headers;
+        if (req_headers != null) {
+            var headerLength = req_headers.length;
+            for (var i = 0; i < headerLength; i++) {
+                var header_span = document.createElement("span");
+                header_span.innerText = decodeURIComponent(req_headers[i]);
+                header_span.setAttribute("class", "req_header_span");
+                req_wrap_div.appendChild(header_span);
+                req_wrap_div.appendChild(document.createElement("br"));
+            }
+        }
+
+        req_wrap_div.appendChild(document.createElement("br"));
+
+        // show request body
+        if (json.req_body != null) {
+            var req_body_span = document.createElement("span");
+            if (typeof json.req_body == "string") {
+                req_body_span.innerText = decodeURIComponent(json.req_body);
+            } else {
+                req_body_span.innerText = JSON.stringify(json.req_body);
+            }
+            req_body_span.setAttribute("class", "req_body_span");
+            req_wrap_div.appendChild(req_body_span);
+        }
+
+        req_detail_div.appendChild(req_wrap_div);
+        network_detail_div.innerHTML += req_detail_div.innerHTML;
+
+        network_detail_div.innerHTML += "<br/>";
+
+        // 2.显示响应的详情
+
+        var res_detail_div = document.getElementById("res_detail_div");
+        res_detail_div.innerHTML = "";
+        var res_wrap_div = document.createElement("div");
+
+        var res_protocol_span = document.createElement("span");
+        res_protocol_span.setAttribute("class", "res_protocol_span");
+        res_protocol_span.innerText = "HTTP/1.1";
+
+        var res_message_span = document.createElement("span");
+        res_message_span.setAttribute("class", "res_message_span");
+        res_message_span.innerText = (json.res_message == null || json.res_message.length == 0) ? "null" : json.res_message;
+
+        var res_code_span = document.createElement("span");
+        res_code_span.setAttribute("class", "res_code_span");
+        res_code_span.innerText = json.res_code;
+
+        res_wrap_div.appendChild(res_protocol_span);
+        res_wrap_div.appendChild(res_message_span);
+        res_wrap_div.appendChild(res_code_span);
+        res_wrap_div.appendChild(document.createElement("br"));
+
+        var res_headers = json.res_headers;
+        if (res_headers != null) {
+            var headerLength = res_headers.length;
+            for (var i = 0; i < headerLength; i++) {
+                var header_span = document.createElement("span");
+                header_span.innerText = res_headers[i];
+                header_span.setAttribute("class", "res_header_span");
+                res_wrap_div.appendChild(header_span);
+                res_wrap_div.appendChild(document.createElement("br"));
+            }
+        }
+
+        res_wrap_div.appendChild(document.createElement("br"));
+        var res_body_span = document.createElement("span");
+        if (typeof json.res_body == "string") {
+            res_body_span.innerText = json.res_body;
+        } else {
+            res_body_span.innerText = JSON.stringify(json.res_body);
+        }
+        res_body_span.setAttribute("class", "res_body_span");
+        res_wrap_div.appendChild(res_body_span)
+
+        res_detail_div.appendChild(res_wrap_div);
+        network_detail_div.innerHTML += res_detail_div.innerHTML;
+
+        // 显示请求body的json格式和响应body的json格式
+
+        try {
+            if (typeof json.req_body == "string") {
+                editor_req.set(eval('(' + json.req_body + ')'));
+            } else {
+                editor_req.set(json.req_body);
+            }
+        } catch (e) {
+        }
+
+        try {
+            if (typeof json.res_body == "string") {
+                editor_res.set(eval('(' + json.res_body + ')'));
+            } else {
+                editor_res.set(json.res_body);
+            }
+        } catch (e) {
+        }
+
+    }
+
+    /**
+     * type_tag的列表改变的时候
+     * @param selectLabel
+     */
+    function onTypeTagChange(selectLabel) {
+        document.getElementById("type_tag_value").innerHTML = selectLabel.children[selectLabel.selectedIndex].getAttribute("value");
+    }
+
+    // 界面上最上面的清除按钮
+    function clearMessage() {
+        document.getElementById("urls_ul").innerHTML = "";
+    }
+
+    function getUrl(url) {
+        var index = url.indexOf("?");
+        if (index > -1) {
+            return url.substring(0, index);
+        } else {
+            return url;
+        }
+    }
+
+    var websocket = null;
+
+    //判断当前浏览器是否支持WebSocket
+    if ('WebSocket' in window) {
+        // websocket = new WebSocket("ws://10.0.32.67:18080/serverLog/client");
+        websocket = new WebSocket("ws://192.168.3.80:23457/serverLog/client");
+        // websocket = new WebSocket("ws://10.0.24.86:18080/serverLog/client");
+    } else {
+        alert('当前浏览器 Not support websocket')
+    }
+
+    //连接发生错误的回调方法
+    websocket.onerror = function () {
+        document.getElementById('socketState').innerText = "WebSocket连接发生错误";
+    };
+
+    //连接成功建立的回调方法
+    websocket.onopen = function () {
+        document.getElementById('socketState').innerText = "连接成功";
+        const message = {
+            type: "setSubscribeTypes",
+            data: ['networkFirst', 'networkTail', 'providerList@networkFirst', 'providerList@networkTail']
+        };
+        websocket.send(JSON.stringify(message));
+    }
+
+    websocket.onclose = function () {
+        document.getElementById('socketState').innerText = "连接关闭";
+    }
+
+    // 接收到消息的回调方法
+    websocket.onmessage = function (event) {
+
+        // console.log("event.data = " + event.data)
+
+        // 拿到发送过来的数据
+        var wrapJson = JSON.parse(event.data);
+
+        // console.log("wrapJson = " + wrapJson)
+
+        if (wrapJson.type == null || wrapJson.owner == null) {
+            return;
+        }
+
+        // 拿到设备tag 和 显示的类型的tag
+        var dataOwner = wrapJson.owner;
+        // var device_tag = wrapJson.owner;
+        // 数据的类型
+        var type_tag = wrapJson.type;
+
+        console.log("owner_tag = " + JSON.stringify(dataOwner))
+        console.log("type_tag = " + type_tag)
+
+        if ("networkFirst" == type_tag || "networkTail" == type_tag) {
+            displayNetwork(wrapJson, type_tag, dataOwner)
+        } else if ("providerList@networkFirst" == type_tag) {   // 现实服务器推送过来的所有设备信息
+            var deviceTag_select = document.getElementById("device_tag");
+            var deviceTagSize = deviceTag_select.children.length;
+
+            deviceTag_select.innerHTML = "";
+
+            var deviceList = wrapJson.data;
+
+            var deviceListLength = deviceList.length;
+
+            for (var i = 0; i < deviceListLength; i++) {
+
+                var device_tag = deviceList[i];
+
+                if (deviceTagSize == 0 && "" == getCurrentDeviceTag()) {
+                    changeDeviceTag(deviceList[0]);
+                } /*else if (deviceListLength == 1) {
+                    changeDeviceTag(deviceList[0]);
+                }*/
+
+                deviceTag_select.innerHTML += "<option name='" + device_tag.uid + "' value='" + device_tag.name + "'>" + device_tag.name + "</option>";
+
+            }
+
+            var selectIndex = 0;
+
+            for (var i = 0; i < deviceListLength; i++) {
+
+                var device_tag = deviceList[i];
+
+                if (device_tag.name == getCurrentDeviceTag()) {
+                    selectIndex = i;
+                }
+
+            }
+
+            deviceTag_select.selectedIndex = selectIndex;
+
+        }
+
+    }
+
+    /**
+     * 设备的列表改变的时候,这个是用户选择列表框里面的item的时候触发的
+     * @param selectLabel
+     */
+    function onDeviceTagChange(selectLabel) {
+        var tag = selectLabel.children[selectLabel.selectedIndex].getAttribute("value")
+        console.log("tag = " + tag)
+        setCurrentDeviceTag(tag);
+        onChangeDeviceTag();
+    }
+
+    /**
+     *  这个是服务端主动推送的设备信息的时候改变的
+     */
+    function changeDeviceTag(deviceTag) {
+        setCurrentDeviceTag(deviceTag.name);
+        onChangeDeviceTag();
+    }
+
+    /**
+     * 用于写当设备信息更改的时候,应该做的一些事情
+     */
+    function onChangeDeviceTag() {
+    }
+
+    /**
+     * 显示客户端的所有可测试的请求,选择之后可以为用户生成所需要的参数
+     * @param wrapJson
+     */
+    function displayNetworkDebugUrls(wrapJson) {
+
+        var network_test_urls_of_server = document.getElementById("network_test_urls_of_server");
+
+        network_test_urls_of_server.innerHTML = "";
+
+        // <li class="li_req_url"><span style="font-size: 40px;color: red;">testRequestCategory</span></li>
+
+        var urlCategoriesList = wrapJson.data;
+
+        var urlCategoriesListLength = urlCategoriesList.length;
+
+        for (var i = 0; i < urlCategoriesListLength; i++) {
+
+            var categoryBean = urlCategoriesList[i];
+
+            var urlList = categoryBean.urlList;
+
+            var urlListLength = urlList.length;
+
+            var req_url_li_category = document.createElement("li");
+            req_url_li_category.setAttribute("class", "li_req_url_category");
+            var req_url_span_category = document.createElement("span");
+            req_url_span_category.innerText = categoryBean.name;
+            req_url_span_category.setAttribute("style", "font-size: 30px;color: red;");
+            req_url_li_category.appendChild(req_url_span_category);
+
+            network_test_urls_of_server.appendChild(req_url_li_category);
+
+            //network_test_urls_of_server.innerHTML += "<li class='li_req_url_category'><span style='font-size: 30px;color: red;'>" + categoryBean.name + "</span></li>";
+
+            for (var j = 0; j < urlListLength; j++) {
+
+                var urlBean = urlList[j];
+
+                var req_url_li = document.createElement("li");
+                req_url_li.setAttribute("class", "li_req_url");
+                var req_url_a = document.createElement("a");
+                req_url_a.href = "#";
+                req_url_a.innerText = decodeURIComponent(urlBean.reqUrl) + " (method = " + urlBean.reqMethod + ")";
+                req_url_a.setAttribute("style", "font-size: 20px;text-decoration: none;");
+                // 这里解决闭包的问题
+                (function (urlBean) {
+                    req_url_a.onclick = function (ev) {
+                        showTestRequestInfo(urlBean);
+                    }
+                })(urlBean);
+                req_url_li.appendChild(req_url_a);
+
+                network_test_urls_of_server.appendChild(req_url_li);
+
+                //network_test_urls_of_server.innerHTML += "<li class='li_req_url'><span onclick='showTestRequestInfo()' style='font-size: 20px;color: #004ED0;'>" + urlBean.reqUrl + " (method = " + urlBean.reqMethod + ")</span></li>";
+
+            }
+
+        }
+
+    }
+
+    function addField(field) {
+
+        if (field == null) {
+            field = "";
+        }
+
+        var container_div = document.getElementById("network_test_request_fields_container");
+
+        var tmpHtml = "";
+
+        tmpHtml += "<div style='margin-top: 8px;'>";
+        tmpHtml += "<input type='text' style='font-size: 20px;margin-right: 8px;padding-left: 8px;padding-top:4px;padding-bottom:4px;padding-right: 8px;width: 180px;' value='" + field + "'/>";
+        tmpHtml += "<span style='font-size: 20px;'>:</span>";
+        tmpHtml += "<input type='text' style='font-size: 20px;margin-left: 8px;padding-left: 8px;padding-top:4px;padding-bottom:4px;padding-right: 8px;width: 360px;' value=''/>";
+        tmpHtml += "<input style='margin-left: 10px;font-size: 30px;' type='button' onclick='deleteTestRequestInfoItem(this)' value='删除'/>";
+        tmpHtml += "</div>";
+
+        container_div.innerHTML += tmpHtml;
+
+    }
+
+    function addHeader(header) {
+
+        // headers 的容器
+        var headers_div = document.getElementById("network_test_request_headers");
+
+        var index = -1;
+        var headerName;
+        var headerValue;
+
+        if (header == null) {
+        } else {
+            index = header.indexOf(":");
+        }
+
+        if (index < 0) { // 没找到或者是header是空的
+            if (header != null) {
+                headerName = header;
+            } else {
+                headerName = "";
+            }
+            headerValue = "";
+        } else {
+            headerName = header.substring(0, index).trim();
+            headerValue = header.substring(index + 1).trim();
+        }
+
+        var tmpHtml = "";
+
+        tmpHtml += "<div style='margin-top: 8px;'>";
+        tmpHtml += "<input type='text' style='font-size: 20px;margin-right: 8px;padding-left: 8px;padding-top:4px;padding-bottom:4px;padding-right: 8px;width: 180px;' value='" + headerName + "'/>";
+        tmpHtml += "<span style='font-size: 20px;'>:</span>";
+        tmpHtml += "<input type='text' style='font-size: 20px;margin-left: 8px;padding-left: 8px;padding-top:4px;padding-bottom:4px;padding-right: 8px;width: 360px;' value='" + headerValue + "'/>";
+        tmpHtml += "<input style='margin-left: 10px;font-size: 30px;' type='button' onclick='deleteTestRequestInfoItem(this)' value='删除'/>";
+        tmpHtml += "</div>";
+
+        headers_div.innerHTML += tmpHtml;
+    }
+
+    function addQuery(query) {
+
+        if (query == null) {
+            query = "";
+        }
+
+        var querys_div = document.getElementById("network_test_request_url_params");
+
+        var tmpHtml = "";
+
+        tmpHtml += "<div style='margin-top: 8px;'>";
+        tmpHtml += "<input type='text' style='font-size: 20px;margin-right: 8px;padding-left: 8px;padding-top:4px;padding-bottom:4px;padding-right: 8px;width: 180px;' value='" + query + "'/>";
+        tmpHtml += "<span style='font-size: 20px;'>:</span>";
+        tmpHtml += "<input type='text' style='font-size: 20px;margin-left: 8px;padding-left: 8px;padding-top:4px;padding-bottom:4px;padding-right: 8px;width: 360px;' value=''/>";
+        tmpHtml += "<input style='margin-left: 10px;font-size: 30px;' type='button' onclick='deleteTestRequestInfoItem(this)' value='删除'/>";
+        tmpHtml += "</div>";
+
+        querys_div.innerHTML += tmpHtml;
+
+    }
+
+    function deleteTestRequestInfoItem(item) {
+        var parentNode = item.parentNode;
+        parentNode.parentNode.removeChild(parentNode);
+    }
+
+    /**
+     * 显示一个测试的请求的信息,帮助测试者快速的知道请求的需要的参数信息
+     * @param urlBean
+     */
+    function showTestRequestInfo(urlBean) {
+
+        console.log("--------urlBean------");
+
+        console.log(urlBean);
+
+        $('#tabs').tabs('select', "请求测试");
+
+        // 显示客户端错误的信息
+        if (urlBean.errorDesc == null) {
+            document.getElementById("network_test_request_error_div").style.display = "none";
+        } else {
+            document.getElementById("network_test_request_error_div").style.display = "block";
+            document.getElementById("network_test_request_error").innerText = urlBean.errorDesc;
+        }
+
+        var body_type_select = document.getElementById("network_test_request_body_type");
+        var methodSelect = document.getElementById("network_test_request_method");
+
+        var isShowBodyInfo = false;
+
+        // 显示客户端的请求方法
+        if (urlBean.reqMethod == "GET") {
+            methodSelect.selectedIndex = 0;
+        } else if (urlBean.reqMethod == "POST") {
+            methodSelect.selectedIndex = 1;
+            isShowBodyInfo = true;
+        } else if (urlBean.reqMethod == "DELETE") {
+            methodSelect.selectedIndex = 2;
+        } else if (urlBean.reqMethod == "PUT") {
+            methodSelect.selectedIndex = 3;
+            isShowBodyInfo = true;
+        }
+
+        if (isShowBodyInfo) {
+
+            document.getElementById("network_test_request_body").style.display = "block";
+
+        } else {
+
+            document.getElementById("network_test_request_body").style.display = "none";
+
+        }
+
+        // 显示客户端的请求地址
+        document.getElementById("network_test_request_url").value = urlBean.reqUrl;
+
+        // ==================================================================================回显header的信息==================================================================================
+
+        // headers 的容器
+        var headers_div = document.getElementById("network_test_request_headers");
+
+        headers_div.innerHTML = "";
+
+        var reqHeaders = urlBean.reqHeaders;
+
+        if (reqHeaders != null && reqHeaders.length != 0) {
+            var headerLength = reqHeaders.length;
+
+            for (var j = 0; j < headerLength; j++) {
+
+                var header = reqHeaders[j];
+
+                addHeader(header);
+
+            }
+        }
+
+        // ==================================================================================回显quesy的信息==================================================================================
+
+        var querys_div = document.getElementById("network_test_request_url_params");
+        querys_div.innerHTML = "";
+
+        var reqQuerys = urlBean.reqQuerys;
+
+        if (reqQuerys != null && reqQuerys.length != 0) {
+            var queryLength = reqQuerys.length;
+
+            for (var j = 0; j < queryLength; j++) {
+
+                var query = reqQuerys[j];
+
+                addQuery(query);
+
+            }
+        }
+
+        // ==================================================================================回显body的信息==================================================================================
+
+        var reqBodyType = urlBean.reqBodyType;
+
+        document.getElementById("network_test_request_fields_container").innerHTML = "";
+
+        if ("form" == reqBodyType) {
+
+            body_type_select.selectedIndex = 2;
+
+            var reqFormBody = urlBean.reqFormBody;
+
+            if (reqFormBody != null && reqFormBody.length > 0) {
+
+                var reqFormBodyLength = reqFormBody.length;
+
+                for (var k = 0; k < reqFormBodyLength; k++) {
+
+                    var field = reqFormBody[k];
+
+                    addField(field);
+
+                }
+
+            }
+
+        } else if ("text" == reqBodyType) {
+
+            body_type_select.selectedIndex = 1;
+
+        } else {
+
+            body_type_select.selectedIndex = 0;
+            var reqJsonBody = urlBean.reqJsonBody;
+            editor_network_test_req.set(eval('(' + reqJsonBody + ')'));
+
+        }
+
+        onTestRequestBodyTypeChange();
+
+    }
+
+    function displayNetwork(wrapJson, type_tag, dataOwner) {
+
+        var type_tag_value = document.getElementById("type_tag_value");
+        //var deviceTag_select = document.getElementById("device_tag");
+        var typeTag_select = document.getElementById("type_tag");
+        //var deviceTagSize = deviceTag_select.children.length;
+        var typeTagSize = typeTag_select.children.length;
+
+        // 没有tag就不显示
+        if (dataOwner == null || type_tag == null) {
+            return;
+        }
+
+        // type_tag去重
+        var isAddTypeTag = true;
+        for (var i = 0; i < typeTagSize; i++) {
+            if (type_tag == typeTag_select.children[i].innerHTML) {
+                isAddTypeTag = false;
+                break;
+            }
+        }
+        if (isAddTypeTag) {
+            var selectIndex = -1;
+            if (typeTagSize == 0) {
+                type_tag_value.innerHTML = type_tag;
+            } else {
+                selectIndex = typeTag_select.selectedIndex;
+            }
+            typeTag_select.innerHTML += "<option value='" + type_tag + "'>" + type_tag + "</option>";
+            if (selectIndex > -1) {
+                typeTag_select.selectedIndex = selectIndex;
+            }
+        }
+
+        // 根据设备tag和type_tag过滤
+        if (dataOwner.name != getCurrentDeviceTag() || type_tag != type_tag_value.innerHTML) {
+            return;
+        }
+
+        var json = wrapJson.data;
+
+        // 过滤信息过滤
+        var filterInfo = document.getElementById("filter_info").value;
+        //document.getElementById('socketState').innerText = filterInfo;
+
+        // 如果在请求的路径中没有找到了,说明这个请求不应该展示
+        if (filterInfo == null || filterInfo == "") {
+        } else {
+            if (decodeURIComponent(json.req_url).toString().indexOf(filterInfo) < 0) {
+                return;
+            }
+        }
+
+        var req_url_li = document.createElement("li");
+        req_url_li.setAttribute("class", "li_req_url");
+        var req_url_a = document.createElement("a");
+        req_url_a.href = "#";
+        req_url_a.innerText = json.req_method + "\t" + getUrl(decodeURIComponent(json.req_url));
+        req_url_a.setAttribute("class", "a_req_url");
+        req_url_a.onclick = function (ev) {
+            try {
+                showJson(json);
+            } catch (e) {
+            }
+            $('#tabs').tabs('select', "raw");
+        }
+        req_url_li.appendChild(req_url_a);
+
+        var urls_ul = document.getElementById("urls_ul");
+        if (urls_ul.children == null || urls_ul.children.length == 0) {
+            urls_ul.appendChild(req_url_li);
+        } else {
+            urls_ul.insertBefore(req_url_li, urls_ul.firstChild);
+        }
+    }
+
+    // 连接关闭的回调方法
+    websocket.onclose = function () {
+        document.getElementById('socketState').innerText = "WebSocket连接关闭";
+    }
+
+    //监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。
+    window.onbeforeunload = function () {
+        closeWebSocket();
+    }
+
+    //关闭WebSocket连接
+    function closeWebSocket() {
+        websocket.close();
+    }
+
+</script>
+
+</html>
